@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hangman Game</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Hangman Game</h1>
+        <P><strong>Click on start game to start the Game</strong></P>
+        <button id="startBtn">Start Game</button>
+        <p id="wordDisplay">Word: _ _ _ _ _</p>
+        <p id="attempts">Attempts Left: 6</p>
+        <p id="guessed">Guessed Letters: </p>
+        <input type="text" id="guessInput" maxlength="1">
+        <button id="guessBtn">Guess</button>
+        <p id="message"></p>
+    </div>
+
+    <script>
+        let gameId = null;
+
+        document.getElementById("startBtn").addEventListener("click", function() {
+            fetch("/start", { method: "POST" })
+                .then(response => response.json())
+                .then(data => {
+                    gameId = data.game_id;
+                    document.getElementById("wordDisplay").innerText = "Word: " + data.hidden_word.join(" ");
+                    document.getElementById("attempts").innerText = "Attempts Left: " + data.attempts_left;
+                    document.getElementById("guessed").innerText = "Guessed Letters: " + data.guessed_letters.join(", ");
+                    document.getElementById("message").innerText = "";
+                });
+        });
+
+        document.getElementById("guessBtn").addEventListener("click", function() {
+            let letter = document.getElementById("guessInput").value;
+            if (!letter || !gameId) return;
+
+            fetch("/guess", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ game_id: gameId, letter: letter })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("wordDisplay").innerText = "Word: " + data.hidden_word.join(" ");
+                document.getElementById("attempts").innerText = "Attempts Left: " + data.attempts_left;
+                document.getElementById("guessed").innerText = "Guessed Letters: " + data.guessed_letters.join(", ");
+                
+                if (data.status === "won") {
+                    document.getElementById("message").innerText = "You Won! 🎉";
+                } else if (data.status === "lost") {
+                    document.getElementById("message").innerText = "You Lost! The word was: " + data.word;
+                }
+            });
+
+            document.getElementById("guessInput").value = "";
+        });
+    </script>
+</body>
+</html>
